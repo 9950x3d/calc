@@ -3,504 +3,249 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>고급 공학용 계산기 - Advanced Scientific Calculator</title>
+    <title>고급 공학용 계산기</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #0a0a23 0%, #1a1a3a 50%, #2d1b69 100%);
+            margin: 0; padding: 0;
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            color: #ffffff;
+            background: linear-gradient(135deg, #181838, #234);
+            color: #fff;
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+            display: flex; align-items: center; justify-content: center;
         }
-
         .calculator {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 25px;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
-            max-width: 420px;
-            width: 100%;
+            background: rgba(22,22,34,0.8); border-radius: 20px; box-shadow: 0 8px 32px #0004;
+            max-width: 480px; width: 96vw; padding: 22px 10px 18px;
+            display: flex; flex-direction: column; align-items: stretch;
         }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .title {
-            font-size: 1.5em;
-            font-weight: 800;
-            background: linear-gradient(45deg, #00d4ff, #7c3aed);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .status {
-            display: flex;
-            gap: 8px;
-        }
-
-        .status-chip {
-            font-size: 11px;
-            padding: 4px 8px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.1);
-            color: #a0a0a0;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .status-chip.active {
-            background: rgba(0, 212, 255, 0.2);
-            color: #00d4ff;
-            border-color: rgba(0, 212, 255, 0.3);
-        }
-
+        .header { display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px; padding-bottom: 7px; border-bottom: 1px solid #334; }
+        .title { font-weight: 900; font-size: 1.33em; letter-spacing:.5px;
+            background:linear-gradient(90deg,#0ff,#77f,#e5f);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+        .chips { display: flex; gap: 8px; }
+        .chip {background:rgba(255,255,255,0.10);padding:2px 8px;border-radius:18px;font-size:12px;color:#b2bed4;}
+        .chip.active {background:rgba(0,255,221,0.14);color:#0ff;}
         .display {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            min-height: 56px; background: #181820; border-radius: 8px;
+            margin-bottom: 6px; padding: 12px 8px;
         }
-
-        .expression {
-            font-size: 14px;
-            color: #a0a0a0;
-            text-align: right;
-            min-height: 20px;
-            font-family: 'SF Mono', Monaco, monospace;
-        }
-
+        .expr { font-size: 15px; color: #99a; text-align: right; min-height: 20px; font-family: ui-monospace, 'SF Mono', Monaco, monospace; }
         .result {
-            font-size: 36px;
-            font-weight: 700;
-            color: #ffffff;
-            text-align: right;
-            min-height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            font-family: 'SF Mono', Monaco, monospace;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            width: 100%; max-width: 100%; display: block;
+            font-size: clamp(24px, 6vw, 33px); font-weight: 900; text-align: right;
+            min-height: 50px; color: #fff; letter-spacing:.5px; font-family: ui-monospace, 'SF Mono', Monaco, monospace;
+            overflow-x: auto; white-space: nowrap; word-break: break-all;
         }
-
-        .error {
-            font-size: 12px;
-            color: #ff6b6b;
-            text-align: right;
-            min-height: 15px;
-            margin-top: 5px;
-        }
-
+        .error { font-size: 13px; color: #ff5757; min-height: 18px; text-align: right; }
         .buttons {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
+            gap: 7px;
         }
-
         .btn {
-            height: 55px;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
+            height: clamp(44px,7vw,55px); font-size:clamp(14px,3vw,18px); border:none; border-radius:12px;
+            font-weight:600; cursor:pointer; color:#fff; background:rgba(30,30,65,.67); transition:.15s;
         }
-
-        .btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        .btn:active { transform:scale(.99); }
+        .btn-number { background: linear-gradient(120deg,#293450,#1a1e2f); font-family:ui-monospace;}
+        .btn-operator { background:linear-gradient(130deg,#ff8935,#fa5d8f);}
+        .btn-function { background:linear-gradient(130deg,#5953d4,#8b65ff); font-size:clamp(13px,2.5vw,15px);}
+        .btn-equals { background:linear-gradient(130deg,#24ddb4,#55ffe3); color:#233; font-weight:900; grid-column:span 2; }
+        .btn-clear { background:linear-gradient(130deg,#e74c3c,#f39c12); }
+        .btn-memory {background:linear-gradient(130deg,#fdcb6e,#fd79a8);font-size:clamp(12px,2vw,13px);}
+        .btn-wide {grid-column:span 2;}
+        @media (max-width:600px) {
+            .calculator {max-width:99vw;}
+            .header{padding-bottom:3px;}
+            .buttons{gap:4px;}
+            .btn{height:36px;font-size:12px;}
+            .result{font-size:clamp(12px,6vw,19px);}
         }
-
-        .btn:active {
-            transform: translateY(0);
+        @media (max-width:400px){
+            .calculator{padding:8px 1vw;}
+            .btn{height:27px;font-size:11px;}
+            .result{font-size:13px;}
         }
-
-        /* 버튼 타입별 스타일 */
-        .btn-number {
-            background: linear-gradient(145deg, #2a2d47, #1e2235);
-            font-family: 'SF Mono', Monaco, monospace;
-        }
-
-        .btn-operator {
-            background: linear-gradient(145deg, #ff6b35, #f39c12);
-            font-weight: 700;
-        }
-
-        .btn-function {
-            background: linear-gradient(145deg, #8e44ad, #9b59b6);
-            font-size: 14px;
-        }
-
-        .btn-equals {
-            background: linear-gradient(145deg, #27ae60, #2ecc71);
-            grid-column: span 2;
-            font-size: 20px;
-            font-weight: 700;
-        }
-
-        .btn-clear {
-            background: linear-gradient(145deg, #e74c3c, #c0392b);
-            font-weight: 700;
-        }
-
-        .btn-memory {
-            background: linear-gradient(145deg, #f39c12, #e67e22);
-            font-size: 14px;
-        }
-
-        .btn-wide {
-            grid-column: span 2;
-        }
-
-        /* 호버 효과 개선 */
-        .btn-number:hover {
-            box-shadow: 0 8px 20px rgba(42, 45, 71, 0.5);
-        }
-
-        .btn-operator:hover {
-            box-shadow: 0 8px 20px rgba(255, 107, 53, 0.5);
-        }
-
-        .btn-function:hover {
-            box-shadow: 0 8px 20px rgba(142, 68, 173, 0.5);
-        }
-
-        .btn-equals:hover {
-            box-shadow: 0 8px 20px rgba(39, 174, 96, 0.5);
-        }
-
-        /* 반응형 디자인 */
-        @media (max-width: 480px) {
-            .calculator {
-                padding: 20px;
-                margin: 10px;
-            }
-            
-            .buttons {
-                gap: 8px;
-            }
-            
-            .btn {
-                height: 50px;
-                font-size: 14px;
-            }
-            
-            .result {
-                font-size: 28px;
-            }
-            
-            .title {
-                font-size: 1.2em;
-            }
-        }
-
-        /* 애니메이션 */
-        .calculator {
-            animation: slideIn 0.4s ease-out;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .info {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            font-size: 11px;
-            color: #a0a0a0;
-            text-align: center;
-            line-height: 1.4;
-        }
+        .info {margin-top:10px;font-size:11px;color:#b2bed4;text-align:center;}
     </style>
 </head>
 <body>
-    <div class="calculator">
-        <div class="header">
-            <h1 class="title">공학용 계산기</h1>
-            <div class="status">
-                <span class="status-chip active">SCI</span>
-                <span class="status-chip" id="angleMode">DEG</span>
-                <span class="status-chip" id="memoryStatus" style="opacity: 0.4">MEM</span>
-            </div>
-        </div>
+<div class="calculator">
+<div class="header">
+    <span class="title">공학용 계산기</span>
+    <span class="chips"><span class="chip active">SCI</span><span class="chip" id="angleMode">DEG</span><span class="chip" id="memChip" style="opacity:.4">MEM</span></span>
+</div>
+<div class="display">
+    <div class="expr" id="expr"></div>
+    <div class="result" id="result">0</div>
+    <div class="error" id="error"></div>
+</div>
+<div class="buttons">
+    <button class="btn btn-memory" onclick="mem('clear')">MC</button>
+    <button class="btn btn-memory" onclick="mem('recall')">MR</button>
+    <button class="btn btn-memory" onclick="mem('add')">M+</button>
+    <button class="btn btn-memory" onclick="mem('sub')">M-</button>
+    <button class="btn btn-clear" onclick="clearAll()">AC</button>
 
-        <div class="display">
-            <div class="expression" id="expression"></div>
-            <div class="result" id="result">0</div>
-            <div class="error" id="error"></div>
-        </div>
+    <button class="btn btn-function" onclick="fn('sin(')">sin</button>
+    <button class="btn btn-function" onclick="fn('cos(')">cos</button>
+    <button class="btn btn-function" onclick="fn('tan(')">tan</button>
+    <button class="btn btn-function" onclick="fn('log(')">log</button>
+    <button class="btn btn-clear" onclick="clearEntry()">CE</button>
 
-        <div class="buttons">
-            <!-- Row 1: 메모리 및 클리어 -->
-            <button class="btn btn-memory" onclick="memoryAction('clear')">MC</button>
-            <button class="btn btn-memory" onclick="memoryAction('recall')">MR</button>
-            <button class="btn btn-memory" onclick="memoryAction('add')">M+</button>
-            <button class="btn btn-memory" onclick="memoryAction('sub')">M-</button>
-            <button class="btn btn-clear" onclick="clearAll()">AC</button>
+    <button class="btn btn-function" onclick="fn('asin(')">asin</button>
+    <button class="btn btn-function" onclick="fn('acos(')">acos</button>
+    <button class="btn btn-function" onclick="fn('atan(')">atan</button>
+    <button class="btn btn-function" onclick="fn('ln(')">ln</button>
+    <button class="btn btn-operator" onclick="bksp()">⌫</button>
 
-            <!-- Row 2: 고급 함수 -->
-            <button class="btn btn-function" onclick="insertFunction('sin(')">sin</button>
-            <button class="btn btn-function" onclick="insertFunction('cos(')">cos</button>
-            <button class="btn btn-function" onclick="insertFunction('tan(')">tan</button>
-            <button class="btn btn-function" onclick="insertFunction('log(')">log</button>
-            <button class="btn btn-clear" onclick="clearEntry()">CE</button>
+    <button class="btn btn-function" onclick="fn('sqrt(')">√</button>
+    <button class="btn btn-function" onclick="pow2()">x²</button>
+    <button class="btn btn-function" onclick="op('^')">x^y</button>
+    <button class="btn btn-function" onclick="constv('π')">π</button>
+    <button class="btn btn-operator" onclick="op('/')">/</button>
 
-            <!-- Row 3: 역함수 -->
-            <button class="btn btn-function" onclick="insertFunction('asin(')">asin</button>
-            <button class="btn btn-function" onclick="insertFunction('acos(')">acos</button>
-            <button class="btn btn-function" onclick="insertFunction('atan(')">atan</button>
-            <button class="btn btn-function" onclick="insertFunction('ln(')">ln</button>
-            <button class="btn btn-operator" onclick="backspace()">⌫</button>
+    <button class="btn btn-number" onclick="num('7')">7</button>
+    <button class="btn btn-number" onclick="num('8')">8</button>
+    <button class="btn btn-number" onclick="num('9')">9</button>
+    <button class="btn btn-function" onclick="constv('e')">e</button>
+    <button class="btn btn-operator" onclick="op('*')">×</button>
 
-            <!-- Row 4: 지수/루트 -->
-            <button class="btn btn-function" onclick="insertFunction('sqrt(')">√</button>
-            <button class="btn btn-function" onclick="insertPower('²')">x²</button>
-            <button class="btn btn-function" onclick="insertOperator('^')">x^y</button>
-            <button class="btn btn-function" onclick="insertConstant('π')">π</button>
-            <button class="btn btn-operator" onclick="insertOperator('/')">/</button>
+    <button class="btn btn-number" onclick="num('4')">4</button>
+    <button class="btn btn-number" onclick="num('5')">5</button>
+    <button class="btn btn-number" onclick="num('6')">6</button>
+    <button class="btn btn-function" onclick="fn('abs(')">|x|</button>
+    <button class="btn btn-operator" onclick="op('-')">−</button>
 
-            <!-- Row 5: 숫자 7,8,9 -->
-            <button class="btn btn-number" onclick="insertNumber('7')">7</button>
-            <button class="btn btn-number" onclick="insertNumber('8')">8</button>
-            <button class="btn btn-number" onclick="insertNumber('9')">9</button>
-            <button class="btn btn-function" onclick="insertConstant('e')">e</button>
-            <button class="btn btn-operator" onclick="insertOperator('*')">×</button>
+    <button class="btn btn-number" onclick="num('1')">1</button>
+    <button class="btn btn-number" onclick="num('2')">2</button>
+    <button class="btn btn-number" onclick="num('3')">3</button>
+    <button class="btn btn-function" onclick="toggleAngle()" id="angleBtn">DEG</button>
+    <button class="btn btn-operator" onclick="op('+')">+</button>
 
-            <!-- Row 6: 숫자 4,5,6 -->
-            <button class="btn btn-number" onclick="insertNumber('4')">4</button>
-            <button class="btn btn-number" onclick="insertNumber('5')">5</button>
-            <button class="btn btn-number" onclick="insertNumber('6')">6</button>
-            <button class="btn btn-function" onclick="insertFunction('abs(')">|x|</button>
-            <button class="btn btn-operator" onclick="insertOperator('-')">−</button>
-
-            <!-- Row 7: 숫자 1,2,3 -->
-            <button class="btn btn-number" onclick="insertNumber('1')">1</button>
-            <button class="btn btn-number" onclick="insertNumber('2')">2</button>
-            <button class="btn btn-number" onclick="insertNumber('3')">3</button>
-            <button class="btn btn-function" onclick="toggleAngleMode()" id="angleBtn">DEG</button>
-            <button class="btn btn-operator" onclick="insertOperator('+')">+</button>
-
-            <!-- Row 8: 0과 등호 -->
-            <button class="btn btn-number btn-wide" onclick="insertNumber('0')">0</button>
-            <button class="btn btn-number" onclick="insertDecimal()">.</button>
-            <button class="btn btn-equals" onclick="calculate()">=</button>
-        </div>
-
-        <div class="info">
-            키보드 지원: 숫자/연산자 직접입력, Enter(=), Backspace(⌫), A(AC), C(CE)
-        </div>
-    </div>
-
-    <script>
-        let expression = '';
-        let angleMode = 'DEG';
-        let memory = 0;
-
-        const expressionEl = document.getElementById('expression');
-        const resultEl = document.getElementById('result');
-        const errorEl = document.getElementById('error');
-        const angleModeEl = document.getElementById('angleMode');
-        const memoryStatusEl = document.getElementById('memoryStatus');
-
-        function updateDisplay() {
-            expressionEl.textContent = expression || '';
-            try {
-                const result = evaluateExpression(expression);
-                resultEl.textContent = formatResult(result);
-                errorEl.textContent = '';
-            } catch (e) {
-                if (expression) {
-                    resultEl.textContent = expression;
-                } else {
-                    resultEl.textContent = '0';
-                }
-                errorEl.textContent = '';
-            }
-        }
-
-        function insertNumber(num) {
-            expression += num;
-            updateDisplay();
-        }
-
-        function insertOperator(op) {
-            if (expression && !/[+\-*/^]$/.test(expression)) {
-                expression += op;
-                updateDisplay();
-            }
-        }
-
-        function insertFunction(func) {
-            expression += func;
-            updateDisplay();
-        }
-
-        function insertConstant(constant) {
-            const value = constant === 'π' ? Math.PI : Math.E;
-            expression += value.toString();
-            updateDisplay();
-        }
-
-        function insertPower(power) {
-            if (power === '²') {
-                expression += '^2';
-            }
-            updateDisplay();
-        }
-
-        function insertDecimal() {
-            if (!expression || /[+\-*/^]$/.test(expression)) {
-                expression += '0.';
-            } else if (!/\.\d*$/.test(expression)) {
-                expression += '.';
-            }
-            updateDisplay();
-        }
-
-        function backspace() {
-            expression = expression.slice(0, -1);
-            updateDisplay();
-        }
-
-        function clearAll() {
-            expression = '';
-            updateDisplay();
-        }
-
-        function clearEntry() {
-            expression = expression.replace(/[0-9.]+$/, '');
-            updateDisplay();
-        }
-
-        function calculate() {
-            try {
-                const result = evaluateExpression(expression);
-                expression = result.toString();
-                updateDisplay();
-            } catch (e) {
-                errorEl.textContent = '계산 오류';
-            }
-        }
-
-        function memoryAction(action) {
-            try {
-                const current = evaluateExpression(expression) || 0;
-                switch (action) {
-                    case 'clear':
-                        memory = 0;
-                        memoryStatusEl.style.opacity = '0.4';
-                        break;
-                    case 'recall':
-                        expression = memory.toString();
-                        break;
-                    case 'add':
-                        memory += current;
-                        memoryStatusEl.style.opacity = '1';
-                        break;
-                    case 'sub':
-                        memory -= current;
-                        memoryStatusEl.style.opacity = '1';
-                        break;
-                }
-                updateDisplay();
-            } catch (e) {
-                errorEl.textContent = '메모리 오류';
-            }
-        }
-
-        function toggleAngleMode() {
-            angleMode = angleMode === 'DEG' ? 'RAD' : 'DEG';
-            angleModeEl.textContent = angleMode;
-            document.getElementById('angleBtn').textContent = angleMode;
-        }
-
-        function formatResult(num) {
-            if (!isFinite(num)) return '오류';
-            const abs = Math.abs(num);
-            if (abs !== 0 && (abs < 1e-6 || abs >= 1e9)) {
-                return num.toExponential(6);
-            }
-            return parseFloat(num.toPrecision(12)).toString();
-        }
-
-        function evaluateExpression(expr) {
-            if (!expr) return 0;
-            
-            // 각도 변환 함수
-            const toRad = (deg) => angleMode === 'DEG' ? deg * Math.PI / 180 : deg;
-            const toDeg = (rad) => angleMode === 'DEG' ? rad * 180 / Math.PI : rad;
-
-            // 안전한 eval 대안
-            let safeExpr = expr
-                .replace(/sin\(/g, `Math.sin(${angleMode === 'DEG' ? 'Math.PI/180*' : ''}(`)
-                .replace(/cos\(/g, `Math.cos(${angleMode === 'DEG' ? 'Math.PI/180*' : ''}(`)
-                .replace(/tan\(/g, `Math.tan(${angleMode === 'DEG' ? 'Math.PI/180*' : ''}(`)
-                .replace(/asin\(/g, `(${angleMode === 'DEG' ? '180/Math.PI*' : ''}Math.asin(`)
-                .replace(/acos\(/g, `(${angleMode === 'DEG' ? '180/Math.PI*' : ''}Math.acos(`)
-                .replace(/atan\(/g, `(${angleMode === 'DEG' ? '180/Math.PI*' : ''}Math.atan(`)
-                .replace(/ln\(/g, 'Math.log(')
-                .replace(/log\(/g, 'Math.log10(')
-                .replace(/sqrt\(/g, 'Math.sqrt(')
-                .replace(/abs\(/g, 'Math.abs(')
-                .replace(/\^/g, '**');
-
-            return Function('"use strict"; return (' + safeExpr + ')')();
-        }
-
-        // 키보드 지원
-        document.addEventListener('keydown', (e) => {
-            e.preventDefault();
-            const key = e.key;
-            
-            if (/[0-9]/.test(key)) insertNumber(key);
-            else if (key === '.') insertDecimal();
-            else if (key === '+') insertOperator('+');
-            else if (key === '-') insertOperator('-');
-            else if (key === '*') insertOperator('*');
-            else if (key === '/') insertOperator('/');
-            else if (key === '^') insertOperator('^');
-            else if (key === 'Enter' || key === '=') calculate();
-            else if (key === 'Backspace') backspace();
-            else if (key === 'Escape' || key.toLowerCase() === 'a') clearAll();
-            else if (key.toLowerCase() === 'c') clearEntry();
-        });
-
-        // 초기화
+    <button class="btn btn-number btn-wide" onclick="num('0')">0</button>
+    <button class="btn btn-number" onclick="dec()">.</button>
+    <button class="btn btn-equals" onclick="calc()">=</button>
+</div>
+<div class="info">키보드 입력 지원, 결과는 좌우로 드래그 가능</div>
+</div>
+<script>
+let expr = '';
+let angle = 'DEG';
+let memval = 0;
+const exprEl = document.getElementById('expr');
+const resultEl = document.getElementById('result');
+const errorEl = document.getElementById('error');
+const angleModeEl = document.getElementById('angleMode');
+const memChip = document.getElementById('memChip');
+function clampLen(str, max=18) {
+    if(str.length <= max) return str;
+    return str.slice(0,max) + '…';
+}
+function updateDisplay() {
+    exprEl.textContent = expr || '';
+    try {
+        let result = evaluate(expr);
+        resultEl.textContent = formatResult(result);
+        errorEl.textContent = '';
+    } catch {
+        resultEl.textContent = expr ? clampLen(expr) : '0';
+        errorEl.textContent = '';
+    }
+}
+function num(n){
+    if(expr.length<30) expr += n;
+    updateDisplay();
+}
+function op(o){
+    if(expr.length<30 && expr && !/[+\-*/^]$/.test(expr)){
+        expr += o;
         updateDisplay();
-    </script>
+    }
+}
+function fn(f){
+    if(expr.length<28) expr += f;
+    updateDisplay();
+}
+function pow2(){
+    if(expr.length<28) expr += '^2';
+    updateDisplay();
+}
+function dec(){
+    if(expr.length<28){
+        if (!expr || /[+\-*/^]$/.test(expr)) expr += '0.';
+        else if (!/\.\d*$/.test(expr)) expr += '.';
+        updateDisplay();
+    }
+}
+function constv(c){
+    if(expr.length<28){
+        let v = c==='π'?Math.PI:Math.E;
+        expr += v.toString().substring(0,12).replace(/0+$/,'');
+        updateDisplay();
+    }
+}
+function bksp(){expr=expr.slice(0,-1);updateDisplay();}
+function clearAll(){expr='';updateDisplay();}
+function clearEntry(){expr=expr.replace(/[0-9.]+$/,'');updateDisplay();}
+function calc(){
+    try{
+        let result = evaluate(expr);
+        expr = formatResult(result,false);
+        updateDisplay();
+    }catch(e){errorEl.textContent = '계산 오류';}
+}
+function mem(act){
+    try{
+        let val = evaluate(expr)||0;
+        if(act==='clear'){memval=0;memChip.style.opacity=.4;}
+        if(act==='recall'){expr=memval.toString();}
+        if(act==='add'){memval+=val;memChip.style.opacity=1;}
+        if(act==='sub'){memval-=val;memChip.style.opacity=1;}
+        updateDisplay();
+    }catch{errorEl.textContent='MEM 오류';}
+}
+function toggleAngle(){angle=(angle==='DEG')?'RAD':'DEG';angleModeEl.textContent=angle;document.getElementById('angleBtn').textContent=angle;}
+function formatResult(num,trim=true){
+    if(!isFinite(num))return '오류';
+    let str=num.toLocaleString('fullwide',{useGrouping:false,maximumFractionDigits:11});
+    if(str.includes('e')||str.length>18){
+        str=str.split('e')[0].slice(0,18)+(str.length>18?'…':'');
+    }
+    if(trim&&str.endsWith('.'))str=str.slice(0,-1);
+    return str;
+}
+function evaluate(expr){
+    if(!expr)return 0;
+    let safeExpr=expr
+        .replace(/sin\(/g,`Math.sin(${angle==='DEG'?'Math.PI/180*':''}(`)
+        .replace(/cos\(/g,`Math.cos(${angle==='DEG'?'Math.PI/180*':''}(`)
+        .replace(/tan\(/g,`Math.tan(${angle==='DEG'?'Math.PI/180*':''}(`)
+        .replace(/asin\(/g,`(${angle==='DEG'?'180/Math.PI*':''}Math.asin(`)
+        .replace(/acos\(/g,`(${angle==='DEG'?'180/Math.PI*':''}Math.acos(`)
+        .replace(/atan\(/g,`(${angle==='DEG'?'180/Math.PI*':''}Math.atan(`)
+        .replace(/ln\(/g,'Math.log(')
+        .replace(/log\(/g,'Math.log10(')
+        .replace(/sqrt\(/g,'Math.sqrt(')
+        .replace(/abs\(/g,'Math.abs(')
+        .replace(/\^/g,'**');
+    return Function('"use strict";return('+safeExpr+')')();
+}
+document.addEventListener('keydown',e=>{
+    if(/[0-9]/.test(e.key))num(e.key);
+    else if(e.key=='.')dec();
+    else if(e.key=='+')op('+');
+    else if(e.key=='-')op('-');
+    else if(e.key=='*')op('*');
+    else if(e.key=='/')op('/');
+    else if(e.key=='^')op('^');
+    else if(e.key=='Enter'||e.key=='=')calc();
+    else if(e.key=='Backspace'){bksp();}
+    else if(e.key=='Escape'||e.key.toLowerCase()=='a')clearAll();
+    else if(e.key.toLowerCase()=='c')clearEntry();
+});
+updateDisplay();
+</script>
 </body>
 </html>
