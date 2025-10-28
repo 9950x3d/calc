@@ -1,1 +1,506 @@
-<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"/><title>ADV CALC - 단일파일 공학용 계산기</title><style>html,body{margin:0;padding:0;background:#0b1020;color:#e9f1ff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}/* 디자인: 단일 파일, 고대비 네온 UI */:root{--bg:#0b1020;--panel:#0f1a33;--glass:rgba(255,255,255,.06);--line:rgba(255,255,255,.08);--txt:#e9f1ff;--muted:#9fb3d1;--acc:#35f2ff;--acc2:#8a7bff;--warn:#ff6b6b;--ok:#2ee6a6} .wrap{max-width:520px;margin:40px auto;padding:18px;border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));box-shadow:0 20px 60px rgba(0,0,0,.45),inset 0 0 0 1px var(--line)} .head{display:flex;justify-content:space-between;align-items:center;padding:6px 4px 14px;border-bottom:1px solid var(--line)} .title{font-weight:800;letter-spacing:.5px;background:linear-gradient(90deg,var(--acc),#59f, #ff7be0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent} .chips{display:flex;gap:8px} .chip{font-size:12px;padding:4px 8px;border-radius:999px;background:var(--glass);color:var(--muted);border:1px solid var(--line)} .display{padding:16px 8px 8px} .expr{min-height:22px;text-align:right;color:var(--muted);font-family:ui-monospace, SFMono-Regular, Menlo, monospace} .main{min-height:56px;text-align:right;font-size:32px;font-weight:800;letter-spacing:.5px} .err{min-height:18px;text-align:right;color:var(--warn);font-size:12px} .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding:10px 0} button{height:46px;border-radius:12px;border:1px solid var(--line);background:var(--glass);color:var(--txt);cursor:pointer;font-weight:700;backdrop-filter:saturate(160%) blur(6px);transition:.15s} button:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,.35)} .num{background:linear-gradient(145deg,#1b2346,#151e3a)} .op{background:linear-gradient(145deg,#ff8f3d,#ff5d5d)} .fn{background:linear-gradient(145deg,#6f6aff,#a08bff)} .eq{background:linear-gradient(145deg,#19d3b4,#27f0de)} .wide{grid-column:span 2} .full{grid-column:span 3} .panel{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;color:var(--muted);font-size:12px} @media(max-width:560px){.wrap{margin:16px}} </style></head><body><div class="wrap"><div class="head"><h2 class="title">ADV CALC</h2><div class="chips"><span class="chip" id="modeChip">SCI</span><span class="chip" id="angChip">DEG</span><span class="chip" id="memChip" style="opacity:.4">MEM</span></div></div><div class="display"><div class="expr" id="expr"></div><div class="main" id="out">0</div><div class="err" id="err"></div></div><div class="grid" id="keys"></div><div class="panel">• 키보드: 숫자/연산자, Enter = =, Backspace = ⌫, A = AC, E = CE, M = M+, Shift+M = M−, R = MR, D = DEG/RAD 토글</div></div><script>/* 단일 파일 공학용 계산기 - 키패드 생성, 파서 및 평가기 */(()=>{'use strict';const exprEl=q('#expr'),outEl=q('#out'),errEl=q('#err'),keysEl=q('#keys'),angChip=q('#angChip'),memChip=q('#memChip');let angle='DEG',mem=0,expr='';const btns=[ 'MC','MR','M+','M-','AC','CE', 'sin','cos','tan','asin','acos','atan', 'ln','log','√','x^2','x^y','n!', 'sinh','cosh','tanh','|x|','1/x','exp', 'π','e','(',')','MOD','%', '7','8','9','/','⌫','÷', '4','5','6','*','^','×', '1','2','3','-','±','Rand', '0','.','inv','floor','ceil','=' ];const map=label=>({label,cls: cls(label)});const cls=l=> l==='='?'eq' : ['+','-','*','/','^','÷','×','MOD','%'].includes(l)?'op' : isNaN(l)&&!['.','(',')','⌫','±'].includes(l)?'fn' : 'num';btns.map(map).forEach(b=>{const el=document.createElement('button');el.textContent=b.label;el.className=b.cls; if(['MC','MR','M+','M-'].includes(b.label)) el.classList.add('wide'); if(b.label==='=') el.classList.add('full'); el.onclick=()=>press(b.label); keysEl.appendChild(el);});function q(s){return document.querySelector(s)}function setErr(m=''){errEl.textContent=m}function setOut(){outEl.textContent=displayEval(expr)||'0';exprEl.textContent=expr}function deg2rad(x){return x*Math.PI/180}function radMaybe(x){return angle==='DEG'?deg2rad(x):x}function factorial(n){if(n<0||!Number.isFinite(n))return NaN;n=Math.floor(n);let r=1;for(let i=2;i<=n;i++)r*=i;return r}function safeMod(a,b){return a- Math.trunc(a/b)*b}function toConst(sym){return sym==='π'?Math.PI: sym==='e'?Math.E: undefined}function tokenize(s){return s.replace(/÷/g,'/').replace(/×/g,'*').replace(/√/g,'sqrt').replace(/x\^2/g,'^2').replace(/x\^y/g,'^').replace(/Rand/g,'random').replace(/MOD/g,'mod')}function displayEval(s){try{const v=evalExpr(s); return (v===undefined||v===null||Number.isNaN(v))?'':format(v)}catch{ return ''}}function format(n){if(!Number.isFinite(n))return '오류';const a=Math.abs(n);if(a!==0&& (a<1e-6||a>=1e9)) return n.toExponential(9);return String(Number.parseFloat(n.toPrecision(12)))}function press(k){setErr('');switch(k){case 'AC': expr=''; break; case 'CE': expr=expr.replace(/([\d.]+|π|e|\))$/,''); break; case '⌫': expr=expr.slice(0,-1); break; case '±': toggleSign(); break; case '=': equals(); return; case 'MC': mem=0; memChip.style.opacity=.4; break; case 'MR': append(mem.toString()); break; case 'M+': mem+=Number(displayEval(expr)||0); memChip.style.opacity=1; break; case 'M-': mem-=Number(displayEval(expr)||0); memChip.style.opacity=1; break; case 'DEG': case 'RAD': angle=k; angChip.textContent=k; break; default: append(mapKey(k)); } setOut()}function mapKey(k){if(k==='π'||k==='e'||k==='('||k===')'||k==='.'||/^[0-9]$/.test(k)) return k; if(k==='1/x'||k==='inv') return 'inv('; if(k==='x^2') return '^2'; if(k==='x^y') return '^'; if(k==='|x|') return 'abs('; if(k==='Rand') return 'random('; if(k==='√') return 'sqrt('; if(k==='MOD') return 'mod('; return k}function append(t){if(t==='^2'){expr=wrapLast(expr)+'^2';return} if(t==='inv('){expr='1/('+wrapLast(expr)+')';return} expr+=t}function wrapLast(s){const m=s.match(/(\([^()]*\)|[\d.]+|π|e)$/); return m?m[1]:'0'}function toggleSign(){const m=expr.match(/(\([^()]*\)|[\d.]+|π|e)$/); if(!m){expr='-('+expr+')';return} const last=m[1]; const i=expr.lastIndexOf(last); const neg='-('+last+')'; expr= expr.slice(0,i)+ (last.startsWith('-(')? last.slice(2,-1):neg)}function equals(){try{const v=evalExpr(expr); if(v===undefined||Number.isNaN(v)) throw 0; expr=String(v); outEl.textContent=format(v)}catch(e){setErr('수식 오류');}}/* 파서: Shunting-yard + 평가기 */const prec={'+':1,'-':1,'*':2,'/':2,'^':3,'mod':2}, rightAssoc=new Set(['^']);function evalExpr(s){s=tokenize(s); if(!s) return 0; const tokens=lex(s); const rpn=toRPN(tokens); return evalRPN(rpn)}function lex(s){const out=[];const re=/\s+|([0-9]*\.?[0-9]+)|([A-Za-z]+)|([()+\-*/^%])|(π|e)|,/g; let m; let lastType=null; while((m=re.exec(s))){ if(m[0].trim()==='') continue; if(m[1]){ out.push({t:'num',v:parseFloat(m[1])}); lastType='num'; } else if(m[4]){ out.push({t:'num',v:toConst(m[4])}); lastType='num'; } else if(m[2]){ const name=m[2].toLowerCase(); out.push({t:'fn',v:name}); lastType='fn'; } else if(m[3]){ let ch=m[3]; if(ch==='-'&&(lastType===null||lastType==='op'||lastType==='lp')){ out.push({t:'num',v:0}); } if(ch==='%'){ out.push({t:'fn',v:'percent'}); lastType='fn'; continue;} out.push({t: ch==='('?'lp': ch===')'?'rp':'op', v:ch}); lastType= ch==='('?'lp': ch===')'?'rp':'op'; } } return out}function toRPN(tk){const out=[],ops=[]; for(const t of tk){ if(t.t==='num') out.push(t); else if(t.t==='fn') ops.push(t); else if(t.t==='lp') ops.push(t); else if(t.t==='rp'){ while(ops.length && ops[ops.length-1].t!=='lp'){ out.push(ops.pop()) } ops.pop(); if(ops.length && ops[ops.length-1].t==='fn') out.push(ops.pop()); } else if(t.t==='op'){ while(ops.length){ const p=ops[ops.length-1]; if(p.t==='fn') {out.push(ops.pop()); continue;} if(p.t==='op'){ const c1=prec[t.v]||0,c2=prec[p.v]||0; if((!rightAssoc.has(t.v)&&c1<=c2)||(rightAssoc.has(t.v)&&c1<c2)) out.push(ops.pop()); else break; } else break; } ops.push(t); } } while(ops.length) out.push(ops.pop()); return out}function evalRPN(rpn){const st=[]; for(const t of rpn){ if(t.t==='num'){ st.push(t.v); continue;} if(t.t==='op'){ const b=st.pop(),a=st.pop(); st.push(applyOp(t.v,a,b)); continue;} if(t.t==='fn'){ const a=st.pop(); st.push(applyFn(t.v,a)); continue;} } return st.pop()}function applyOp(op,a,b){switch(op){case '+':return a+b;case '-':return a-b;case '*':return a*b;case '/':return a/b;case '^':return Math.pow(a,b);case 'mod':return safeMod(a,b);} return NaN}function applyFn(fn,a){switch(fn){case 'sin':return Math.sin(radMaybe(a));case 'cos':return Math.cos(radMaybe(a));case 'tan':return Math.tan(radMaybe(a));case 'asin':return angle==='DEG'? (Math.asin(a)*180/Math.PI):Math.asin(a);case 'acos':return angle==='DEG'? (Math.acos(a)*180/Math.PI):Math.acos(a);case 'atan':return angle==='DEG'? (Math.atan(a)*180/Math.PI):Math.atan(a);case 'sinh':return Math.sinh(a);case 'cosh':return Math.cosh(a);case 'tanh':return Math.tanh(a);case 'ln':return Math.log(a);case 'log':return Math.log10(a);case 'sqrt':return Math.sqrt(a);case 'abs':return Math.abs(a);case 'random':return Math.random();case 'exp':return Math.exp(a);case 'percent':return a/100;case 'ceil':return Math.ceil(a);case 'floor':return Math.floor(a);case 'n!':return factorial(a);} return NaN}/* 키보드 */document.addEventListener('keydown',e=>{const k=e.key; if(/^[0-9]$/.test(k)) {append(k); setOut(); return;} const map={'+':'+','-':'-','*':'*','/':'/','^':'^','%':'%','(':'(',')':')','Enter':'=','=':'=','Backspace':'⌫','Delete':'CE','a':'AC','A':'AC','m':'M+','M':'M-','r':'MR','R':'MR','d':'TOGGLE_ANG','D':'TOGGLE_ANG','.':'.'}; if(k in map){const v=map[k]; if(v==='='){equals();return;} if(v==='TOGGLE_ANG'){angle=angle==='DEG'?'RAD':'DEG'; angChip.textContent=angle; return;} press(v);} });})();</script></body></html>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>고급 공학용 계산기 - Advanced Scientific Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a23 0%, #1a1a3a 50%, #2d1b69 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #ffffff;
+        }
+
+        .calculator {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            max-width: 420px;
+            width: 100%;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .title {
+            font-size: 1.5em;
+            font-weight: 800;
+            background: linear-gradient(45deg, #00d4ff, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .status {
+            display: flex;
+            gap: 8px;
+        }
+
+        .status-chip {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #a0a0a0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .status-chip.active {
+            background: rgba(0, 212, 255, 0.2);
+            color: #00d4ff;
+            border-color: rgba(0, 212, 255, 0.3);
+        }
+
+        .display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .expression {
+            font-size: 14px;
+            color: #a0a0a0;
+            text-align: right;
+            min-height: 20px;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+        .result {
+            font-size: 36px;
+            font-weight: 700;
+            color: #ffffff;
+            text-align: right;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            font-family: 'SF Mono', Monaco, monospace;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .error {
+            font-size: 12px;
+            color: #ff6b6b;
+            text-align: right;
+            min-height: 15px;
+            margin-top: 5px;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+
+        .btn {
+            height: 55px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* 버튼 타입별 스타일 */
+        .btn-number {
+            background: linear-gradient(145deg, #2a2d47, #1e2235);
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+        .btn-operator {
+            background: linear-gradient(145deg, #ff6b35, #f39c12);
+            font-weight: 700;
+        }
+
+        .btn-function {
+            background: linear-gradient(145deg, #8e44ad, #9b59b6);
+            font-size: 14px;
+        }
+
+        .btn-equals {
+            background: linear-gradient(145deg, #27ae60, #2ecc71);
+            grid-column: span 2;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .btn-clear {
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+            font-weight: 700;
+        }
+
+        .btn-memory {
+            background: linear-gradient(145deg, #f39c12, #e67e22);
+            font-size: 14px;
+        }
+
+        .btn-wide {
+            grid-column: span 2;
+        }
+
+        /* 호버 효과 개선 */
+        .btn-number:hover {
+            box-shadow: 0 8px 20px rgba(42, 45, 71, 0.5);
+        }
+
+        .btn-operator:hover {
+            box-shadow: 0 8px 20px rgba(255, 107, 53, 0.5);
+        }
+
+        .btn-function:hover {
+            box-shadow: 0 8px 20px rgba(142, 68, 173, 0.5);
+        }
+
+        .btn-equals:hover {
+            box-shadow: 0 8px 20px rgba(39, 174, 96, 0.5);
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 480px) {
+            .calculator {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            .buttons {
+                gap: 8px;
+            }
+            
+            .btn {
+                height: 50px;
+                font-size: 14px;
+            }
+            
+            .result {
+                font-size: 28px;
+            }
+            
+            .title {
+                font-size: 1.2em;
+            }
+        }
+
+        /* 애니메이션 */
+        .calculator {
+            animation: slideIn 0.4s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .info {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 11px;
+            color: #a0a0a0;
+            text-align: center;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="header">
+            <h1 class="title">공학용 계산기</h1>
+            <div class="status">
+                <span class="status-chip active">SCI</span>
+                <span class="status-chip" id="angleMode">DEG</span>
+                <span class="status-chip" id="memoryStatus" style="opacity: 0.4">MEM</span>
+            </div>
+        </div>
+
+        <div class="display">
+            <div class="expression" id="expression"></div>
+            <div class="result" id="result">0</div>
+            <div class="error" id="error"></div>
+        </div>
+
+        <div class="buttons">
+            <!-- Row 1: 메모리 및 클리어 -->
+            <button class="btn btn-memory" onclick="memoryAction('clear')">MC</button>
+            <button class="btn btn-memory" onclick="memoryAction('recall')">MR</button>
+            <button class="btn btn-memory" onclick="memoryAction('add')">M+</button>
+            <button class="btn btn-memory" onclick="memoryAction('sub')">M-</button>
+            <button class="btn btn-clear" onclick="clearAll()">AC</button>
+
+            <!-- Row 2: 고급 함수 -->
+            <button class="btn btn-function" onclick="insertFunction('sin(')">sin</button>
+            <button class="btn btn-function" onclick="insertFunction('cos(')">cos</button>
+            <button class="btn btn-function" onclick="insertFunction('tan(')">tan</button>
+            <button class="btn btn-function" onclick="insertFunction('log(')">log</button>
+            <button class="btn btn-clear" onclick="clearEntry()">CE</button>
+
+            <!-- Row 3: 역함수 -->
+            <button class="btn btn-function" onclick="insertFunction('asin(')">asin</button>
+            <button class="btn btn-function" onclick="insertFunction('acos(')">acos</button>
+            <button class="btn btn-function" onclick="insertFunction('atan(')">atan</button>
+            <button class="btn btn-function" onclick="insertFunction('ln(')">ln</button>
+            <button class="btn btn-operator" onclick="backspace()">⌫</button>
+
+            <!-- Row 4: 지수/루트 -->
+            <button class="btn btn-function" onclick="insertFunction('sqrt(')">√</button>
+            <button class="btn btn-function" onclick="insertPower('²')">x²</button>
+            <button class="btn btn-function" onclick="insertOperator('^')">x^y</button>
+            <button class="btn btn-function" onclick="insertConstant('π')">π</button>
+            <button class="btn btn-operator" onclick="insertOperator('/')">/</button>
+
+            <!-- Row 5: 숫자 7,8,9 -->
+            <button class="btn btn-number" onclick="insertNumber('7')">7</button>
+            <button class="btn btn-number" onclick="insertNumber('8')">8</button>
+            <button class="btn btn-number" onclick="insertNumber('9')">9</button>
+            <button class="btn btn-function" onclick="insertConstant('e')">e</button>
+            <button class="btn btn-operator" onclick="insertOperator('*')">×</button>
+
+            <!-- Row 6: 숫자 4,5,6 -->
+            <button class="btn btn-number" onclick="insertNumber('4')">4</button>
+            <button class="btn btn-number" onclick="insertNumber('5')">5</button>
+            <button class="btn btn-number" onclick="insertNumber('6')">6</button>
+            <button class="btn btn-function" onclick="insertFunction('abs(')">|x|</button>
+            <button class="btn btn-operator" onclick="insertOperator('-')">−</button>
+
+            <!-- Row 7: 숫자 1,2,3 -->
+            <button class="btn btn-number" onclick="insertNumber('1')">1</button>
+            <button class="btn btn-number" onclick="insertNumber('2')">2</button>
+            <button class="btn btn-number" onclick="insertNumber('3')">3</button>
+            <button class="btn btn-function" onclick="toggleAngleMode()" id="angleBtn">DEG</button>
+            <button class="btn btn-operator" onclick="insertOperator('+')">+</button>
+
+            <!-- Row 8: 0과 등호 -->
+            <button class="btn btn-number btn-wide" onclick="insertNumber('0')">0</button>
+            <button class="btn btn-number" onclick="insertDecimal()">.</button>
+            <button class="btn btn-equals" onclick="calculate()">=</button>
+        </div>
+
+        <div class="info">
+            키보드 지원: 숫자/연산자 직접입력, Enter(=), Backspace(⌫), A(AC), C(CE)
+        </div>
+    </div>
+
+    <script>
+        let expression = '';
+        let angleMode = 'DEG';
+        let memory = 0;
+
+        const expressionEl = document.getElementById('expression');
+        const resultEl = document.getElementById('result');
+        const errorEl = document.getElementById('error');
+        const angleModeEl = document.getElementById('angleMode');
+        const memoryStatusEl = document.getElementById('memoryStatus');
+
+        function updateDisplay() {
+            expressionEl.textContent = expression || '';
+            try {
+                const result = evaluateExpression(expression);
+                resultEl.textContent = formatResult(result);
+                errorEl.textContent = '';
+            } catch (e) {
+                if (expression) {
+                    resultEl.textContent = expression;
+                } else {
+                    resultEl.textContent = '0';
+                }
+                errorEl.textContent = '';
+            }
+        }
+
+        function insertNumber(num) {
+            expression += num;
+            updateDisplay();
+        }
+
+        function insertOperator(op) {
+            if (expression && !/[+\-*/^]$/.test(expression)) {
+                expression += op;
+                updateDisplay();
+            }
+        }
+
+        function insertFunction(func) {
+            expression += func;
+            updateDisplay();
+        }
+
+        function insertConstant(constant) {
+            const value = constant === 'π' ? Math.PI : Math.E;
+            expression += value.toString();
+            updateDisplay();
+        }
+
+        function insertPower(power) {
+            if (power === '²') {
+                expression += '^2';
+            }
+            updateDisplay();
+        }
+
+        function insertDecimal() {
+            if (!expression || /[+\-*/^]$/.test(expression)) {
+                expression += '0.';
+            } else if (!/\.\d*$/.test(expression)) {
+                expression += '.';
+            }
+            updateDisplay();
+        }
+
+        function backspace() {
+            expression = expression.slice(0, -1);
+            updateDisplay();
+        }
+
+        function clearAll() {
+            expression = '';
+            updateDisplay();
+        }
+
+        function clearEntry() {
+            expression = expression.replace(/[0-9.]+$/, '');
+            updateDisplay();
+        }
+
+        function calculate() {
+            try {
+                const result = evaluateExpression(expression);
+                expression = result.toString();
+                updateDisplay();
+            } catch (e) {
+                errorEl.textContent = '계산 오류';
+            }
+        }
+
+        function memoryAction(action) {
+            try {
+                const current = evaluateExpression(expression) || 0;
+                switch (action) {
+                    case 'clear':
+                        memory = 0;
+                        memoryStatusEl.style.opacity = '0.4';
+                        break;
+                    case 'recall':
+                        expression = memory.toString();
+                        break;
+                    case 'add':
+                        memory += current;
+                        memoryStatusEl.style.opacity = '1';
+                        break;
+                    case 'sub':
+                        memory -= current;
+                        memoryStatusEl.style.opacity = '1';
+                        break;
+                }
+                updateDisplay();
+            } catch (e) {
+                errorEl.textContent = '메모리 오류';
+            }
+        }
+
+        function toggleAngleMode() {
+            angleMode = angleMode === 'DEG' ? 'RAD' : 'DEG';
+            angleModeEl.textContent = angleMode;
+            document.getElementById('angleBtn').textContent = angleMode;
+        }
+
+        function formatResult(num) {
+            if (!isFinite(num)) return '오류';
+            const abs = Math.abs(num);
+            if (abs !== 0 && (abs < 1e-6 || abs >= 1e9)) {
+                return num.toExponential(6);
+            }
+            return parseFloat(num.toPrecision(12)).toString();
+        }
+
+        function evaluateExpression(expr) {
+            if (!expr) return 0;
+            
+            // 각도 변환 함수
+            const toRad = (deg) => angleMode === 'DEG' ? deg * Math.PI / 180 : deg;
+            const toDeg = (rad) => angleMode === 'DEG' ? rad * 180 / Math.PI : rad;
+
+            // 안전한 eval 대안
+            let safeExpr = expr
+                .replace(/sin\(/g, `Math.sin(${angleMode === 'DEG' ? 'Math.PI/180*' : ''}(`)
+                .replace(/cos\(/g, `Math.cos(${angleMode === 'DEG' ? 'Math.PI/180*' : ''}(`)
+                .replace(/tan\(/g, `Math.tan(${angleMode === 'DEG' ? 'Math.PI/180*' : ''}(`)
+                .replace(/asin\(/g, `(${angleMode === 'DEG' ? '180/Math.PI*' : ''}Math.asin(`)
+                .replace(/acos\(/g, `(${angleMode === 'DEG' ? '180/Math.PI*' : ''}Math.acos(`)
+                .replace(/atan\(/g, `(${angleMode === 'DEG' ? '180/Math.PI*' : ''}Math.atan(`)
+                .replace(/ln\(/g, 'Math.log(')
+                .replace(/log\(/g, 'Math.log10(')
+                .replace(/sqrt\(/g, 'Math.sqrt(')
+                .replace(/abs\(/g, 'Math.abs(')
+                .replace(/\^/g, '**');
+
+            return Function('"use strict"; return (' + safeExpr + ')')();
+        }
+
+        // 키보드 지원
+        document.addEventListener('keydown', (e) => {
+            e.preventDefault();
+            const key = e.key;
+            
+            if (/[0-9]/.test(key)) insertNumber(key);
+            else if (key === '.') insertDecimal();
+            else if (key === '+') insertOperator('+');
+            else if (key === '-') insertOperator('-');
+            else if (key === '*') insertOperator('*');
+            else if (key === '/') insertOperator('/');
+            else if (key === '^') insertOperator('^');
+            else if (key === 'Enter' || key === '=') calculate();
+            else if (key === 'Backspace') backspace();
+            else if (key === 'Escape' || key.toLowerCase() === 'a') clearAll();
+            else if (key.toLowerCase() === 'c') clearEntry();
+        });
+
+        // 초기화
+        updateDisplay();
+    </script>
+</body>
+</html>
