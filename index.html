@@ -3,28 +3,176 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>고급 공학용 계산기</title>
+    <title>강화된 공학용 계산기</title>
     <style>
         * { box-sizing: border-box; }
         body {
             margin:0; padding:0; min-height:100vh;
-            background:linear-gradient(135deg,#181838,#234);
+            background:linear-gradient(133deg,#181838,#234);
             color:#fff; font-family:'Segoe UI',Roboto,Arial,sans-serif;
             display:flex; align-items:center; justify-content:center;
         }
         .calculator {
-            background:rgba(22,22,34,0.95); border-radius:20px; box-shadow:0 8px 32px #0006;
-            max-width:390px; width:100%; padding:16px 5vw 18px;
+            background:rgba(22,22,34,0.98); border-radius:20px; box-shadow:0 10px 42px #000a;
+            max-width:440px; width:100vw; padding:24px 4vw 20px;
             display:flex; flex-direction:column; align-items:stretch;
+            min-width:280px;
         }
-        .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid #334; }
-        .title { font-weight:bold; font-size:1.20em; background:linear-gradient(90deg,#0ff,#77f,#e5f);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
-        .angle-switch {
-            display:flex; gap:8px; align-items:center;
+        .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:13px; padding-bottom:6px; border-bottom:1px solid #334; }
+        .title { font-weight:bold; font-size:1.33em; background:linear-gradient(95deg,#28f,#47fa,#e9ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+        .angle-switch { display:flex; gap:7px; align-items:center; }
+        .chip { background:rgba(255,255,255,0.16);padding:3px 11px;border-radius:18px;font-size:14px;color:#b2bed4;cursor:pointer; }
+        .chip.active {background:rgba(0,255,221,0.17);color:#0ff;}
+        .display { min-height:62px;background:#161626;border-radius:8px;margin-bottom:8px;padding:10px 5px 7px 12px;word-break:break-all; }
+        .expr { font-size:16px; color:#b2bede; font-family:ui-monospace,'SF Mono',monospace; text-align:right; }
+        .result { width:100%; font-size:clamp(26px,6vw,35px); font-weight:900; text-align:right; min-height:50px; color:#fff; letter-spacing:1px; font-family:ui-monospace,'SF Mono',monospace; overflow-x:auto; white-space:nowrap;}
+        .error { font-size:13px; color:#ff5757; min-height:17px; text-align:right; }
+        .buttons { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+        .btn {
+            height:clamp(46px,8vw,60px); font-size:clamp(15px,2.9vw,19px); border:none; border-radius:12px; font-weight:600; cursor:pointer;
+            color:#fff; background:rgba(30,30,65,.78); transition:.14s;
         }
-        .chip {
-            background:rgba(255,255,255,0.16);padding:3px 10px;border-radius:18px;font-size:13px;color:#b2bed4; cursor:pointer;
+        .btn:active { background:rgba(0,255,140,0.19); }
+        .btn-op { background:linear-gradient(110deg,#448bf5,#36dcea); }
+        .btn-fn { background:linear-gradient(110deg,#ba79f7,#7bdcff); font-size:clamp(14px,2.5vw,16px); }
+        .btn-eq { background:linear-gradient(110deg,#24ddb4,#ffe371); color:#233; font-weight:900; grid-column:span 2; }
+        .btn-clear { background:linear-gradient(110deg,#f46c3c,#fcba4d); }
+        .btn-wide { grid-column:span 2; }
+        @media (max-width:600px) {
+            .calculator{max-width:99vw;min-width:0;}.buttons{gap:5px;}.btn{height:38px;font-size:12px;}.result{font-size:clamp(14px,6vw,21px);}
         }
-        .chip.active {background:rgba(0,255,221,0.16);color:#0ff;}
-        .display {
-            min-height:54px;background:#161626;border-radius:8px;margin-bottom:6px;padd ...
+        @media (max-width:440px){.calculator{padding:11px 1vw;}}
+        .info {margin-top:9px; font-size:11px; color:#b5c4d9; text-align:center;}
+    </style>
+</head>
+<body>
+<div class="calculator">
+  <div class="header">
+    <span class="title">공학용 계산기</span>
+    <span class="angle-switch">
+      <span class="chip" id="degBtn" onclick="setAngle('DEG')">DEG</span>
+      <span class="chip" id="radBtn" onclick="setAngle('RAD')">RAD</span>
+    </span>
+  </div>
+  <div class="display">
+    <div class="expr" id="expr"></div>
+    <div class="result" id="result">0</div>
+    <div class="error" id="error"></div>
+  </div>
+  <div class="buttons">
+    <button class="btn btn-clear" onclick="allClear()">AC</button>
+    <button class="btn btn-clear" onclick="backspace()">⌫</button>
+    <button class="btn btn-fn" onclick="fn('sqrt(')">√</button>
+    <button class="btn btn-fn" onclick="fn('pow(')">xʸ</button>
+    <button class="btn btn-op" onclick="op('/')">÷</button>
+    <button class="btn btn-fn" onclick="fn('sin(')">sin</button>
+    <button class="btn btn-fn" onclick="fn('cos(')">cos</button>
+    <button class="btn btn-fn" onclick="fn('tan(')">tan</button>
+    <button class="btn btn-fn" onclick="fn('log10(')">log</button>
+    <button class="btn btn-op" onclick="op('*')">×</button>
+    <button class="btn" onclick="num('7')">7</button>
+    <button class="btn" onclick="num('8')">8</button>
+    <button class="btn" onclick="num('9')">9</button>
+    <button class="btn btn-fn" onclick="fn('ln(')">ln</button>
+    <button class="btn btn-op" onclick="op('-')">−</button>
+    <button class="btn" onclick="num('4')">4</button>
+    <button class="btn" onclick="num('5')">5</button>
+    <button class="btn" onclick="num('6')">6</button>
+    <button class="btn btn-fn" onclick="fn('abs(')">|x|</button>
+    <button class="btn btn-op" onclick="op('+')">+</button>
+    <button class="btn" onclick="num('1')">1</button>
+    <button class="btn" onclick="num('2')">2</button>
+    <button class="btn" onclick="num('3')">3</button>
+    <button class="btn btn-fn" onclick="paren('(')">(</button>
+    <button class="btn btn-fn" onclick="paren(')')">)</button>
+    <button class="btn btn-wide" onclick="num('0')">0</button>
+    <button class="btn" onclick="dot()">.</button>
+    <button class="btn btn-eq" onclick="calculate()">=</button>
+  </div>
+  <div class="info">키보드 입력 지원, 각도 선택, 기호 개선, 결과 =時 출력, 자동 괄호/오류 개선</div>
+</div>
+<script>
+let expr = '';
+let angle = 'DEG';
+const exprEl = document.getElementById('expr');
+const resultEl = document.getElementById('result');
+const errorEl = document.getElementById('error');
+const degBtn = document.getElementById('degBtn');
+const radBtn = document.getElementById('radBtn');
+function setAngle(mode){
+    angle = mode;
+    degBtn.classList.toggle('active',angle==='DEG');
+    radBtn.classList.toggle('active',angle==='RAD');
+    updateDisplay();
+}
+function convertDisplay(s){
+    return s.replace(/\*/g, '×').replace(/\//g, '÷');
+}
+function safeEval(math) {
+    try {
+        let parsed = math
+          .replace(/(sin|cos|tan|log10|ln|sqrt|abs|pow)\(/g,function(m){
+            let fname = m.slice(0,-1);
+            if(['sin','cos','tan'].includes(fname))
+                return 'Math.'+fname+'('+(angle==='DEG'?'Math.PI/180*':'');
+            return 'Math.'+fname+'(';
+          })
+          .replace(/Math.ln/g, 'Math.log')
+          .replace(/(\d+)\^([\d()]+)/g, 'Math.pow($1,$2)')
+          .replace(/π/g, Math.PI.toString())
+          .replace(/e/g, Math.E.toString());
+        if (!/^[0-9\.\+\-\*\/\(\)Mathabsinrtcogelpawπe,]*$/.test(parsed)) throw "허용되지 않는 문자";
+        let open=(parsed.match(/\(/g)||[]).length,close=(parsed.match(/\)/g)||[]).length;
+        parsed += ")".repeat(open-close>0?open-close:0);
+        return Function(`'use strict';return (${parsed})`)();
+    } catch { throw "계산 오류"; }
+}
+function updateDisplay(){
+    exprEl.textContent = convertDisplay(expr);
+    resultEl.textContent = expr ? '' : '0';
+    errorEl.textContent = '';
+}
+function showResult(){
+    try{
+        let val = safeEval(expr);
+        if(val!==undefined && val!==null && isFinite(val))
+            resultEl.textContent = (''+val).length>16 ? val.toExponential(10) : val;
+        else resultEl.textContent = '오류';
+    }catch(e){
+        resultEl.textContent = expr? '...' : '0';
+        errorEl.textContent = typeof e==='string'?e:'계산 오류';
+    }
+}
+function num(v){ if(expr.length<32)expr+=v; updateDisplay(); }
+function op(o){
+    if(expr && !(/[+\-×÷]$/.test(convertDisplay(expr)))){
+        if(o==='*'||o==='×') expr+='*';
+        else if(o==='/'||o==='÷') expr+='/';
+        else expr+=o;
+        updateDisplay();
+    }
+}
+function fn(f){ if(expr.length<30)expr+=f; updateDisplay(); }
+function paren(p){ expr+=p; updateDisplay(); }
+function dot(){ if(!expr)expr+='0.'; else if(!/\.\d*$/.test(expr))expr+='.'; updateDisplay(); }
+function allClear(){expr=''; updateDisplay();}
+function backspace(){expr=expr.slice(0,-1); updateDisplay(); }
+function calculate(){ showResult(); }
+document.addEventListener('keydown',e=>{
+    if(/[0-9]/.test(e.key)) num(e.key);
+    else if(e.key=='.') dot();
+    else if(["/","*"] .concat(["÷","×"]).includes(e.key)) op(e.key);
+    else if(["-","+"].includes(e.key)) op(e.key);
+    else if(e.key=="Enter"||e.key=="=") calculate();
+    else if(e.key=="Backspace") backspace();
+    else if(e.key=="Escape") allClear();
+    else if(e.key=="(") paren("(");
+    else if(e.key==")") paren(")");
+    else if(['d','D'].includes(e.key)) setAngle('DEG');
+    else if(['r','R'].includes(e.key)) setAngle('RAD');
+});
+setAngle('DEG');
+updateDisplay();
+</script>
+</body>
+</html>
