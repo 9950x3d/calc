@@ -3,178 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>개선된 공학용 계산기</title>
+    <title>고급 공학용 계산기</title>
     <style>
         * { box-sizing: border-box; }
         body {
-            margin: 0; padding: 0; min-height: 100vh;
-            background: linear-gradient(135deg, #181838, #234);
-            color: #fff; font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-            display: flex; align-items: center; justify-content: center;
+            margin:0; padding:0; min-height:100vh;
+            background:linear-gradient(135deg,#181838,#234);
+            color:#fff; font-family:'Segoe UI',Roboto,Arial,sans-serif;
+            display:flex; align-items:center; justify-content:center;
         }
         .calculator {
-            background: rgba(22,22,34,0.87); border-radius: 20px; box-shadow: 0 8px 32px #0004;
-            max-width: 410px; width: 95vw; padding: 22px 12px 18px;
-            display: flex; flex-direction: column; align-items: stretch;
+            background:rgba(22,22,34,0.95); border-radius:20px; box-shadow:0 8px 32px #0006;
+            max-width:390px; width:100%; padding:16px 5vw 18px;
+            display:flex; flex-direction:column; align-items:stretch;
         }
-        .header { display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #334; }
-        .title {
-            font-weight: bold; font-size: 1.25em; background:linear-gradient(90deg,#0ff,#77f,#e5f);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+        .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid #334; }
+        .title { font-weight:bold; font-size:1.20em; background:linear-gradient(90deg,#0ff,#77f,#e5f);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+        .angle-switch {
+            display:flex; gap:8px; align-items:center;
+        }
+        .chip {
+            background:rgba(255,255,255,0.16);padding:3px 10px;border-radius:18px;font-size:13px;color:#b2bed4; cursor:pointer;
+        }
+        .chip.active {background:rgba(0,255,221,0.16);color:#0ff;}
         .display {
-            min-height: 54px; background: #161626; border-radius: 8px; margin-bottom: 6px; padding: 12px 8px;
-        }
-        .expr, .result, .error {
-            font-family: ui-monospace,'Fira Mono','SF Mono',monospace;
-            text-align:right;
-            overflow-x:auto;
-        }
-        .expr { font-size: 15px; color: #8aa; min-height: 20px; }
-        .result { font-size: clamp(24px, 6vw, 33px); font-weight: bold; min-height: 48px; color:#fff; letter-spacing:1px; }
-        .error { font-size: 13px; color: #ff5757; min-height: 17px; }
-        .buttons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
-        .btn {
-            height: clamp(44px,7vw,55px); font-size:clamp(14px,3vw,18px); border:none;
-            border-radius:12px;font-weight:600;cursor:pointer;color:#fff;
-            background:rgba(30,30,65,.77);transition:.12s;
-        }
-        .btn:active{background:rgba(37,255,241,0.21);}
-        .btn-op{ background: linear-gradient(110deg,#2e8bfa,#5ecfea); }
-        .btn-fn{ background: linear-gradient(110deg,#ae6cf7,#76b5ff); font-size:clamp(13px,2.5vw,15px);}
-        .btn-eq{ background: linear-gradient(110deg,#24ddb4,#ffe37a); color:#233; font-weight:900; grid-column:span 2; }
-        .btn-clear{ background: linear-gradient(110deg,#e74c3c,#fbba4d);}
-        .btn-wide{ grid-column:span 2;}
-        @media (max-width:600px) {
-            .calculator{max-width:99vw;}.buttons{gap:4px;}.btn{height:36px;font-size:12px;}.result{font-size:clamp(12px,6vw,19px);}
-        }
-        .info {margin-top:11px; font-size:11px; color:#b2bed4; text-align:center;}
-    </style>
-</head>
-<body>
-<div class="calculator">
-  <div class="header">
-    <span class="title">공학용 계산기</span>
-  </div>
-  <div class="display">
-    <div class="expr" id="expr"></div>
-    <div class="result" id="result">0</div>
-    <div class="error" id="error"></div>
-  </div>
-  <div class="buttons">
-    <button class="btn btn-clear" onclick="allClear()">AC</button>
-    <button class="btn btn-clear" onclick="backspace()">⌫</button>
-    <button class="btn btn-fn" onclick="fn('sqrt(')">√</button>
-    <button class="btn btn-fn" onclick="fn('pow(')">xʸ</button>
-    <button class="btn btn-op" onclick="op('/')">÷</button>
-
-    <button class="btn btn-fn" onclick="fn('sin(')">sin</button>
-    <button class="btn btn-fn" onclick="fn('cos(')">cos</button>
-    <button class="btn btn-fn" onclick="fn('tan(')">tan</button>
-    <button class="btn btn-fn" onclick="fn('log10(')">log</button>
-    <button class="btn btn-op" onclick="op('*')">×</button>
-
-    <button class="btn" onclick="num('7')">7</button>
-    <button class="btn" onclick="num('8')">8</button>
-    <button class="btn" onclick="num('9')">9</button>
-    <button class="btn btn-fn" onclick="fn('ln(')">ln</button>
-    <button class="btn btn-op" onclick="op('-')">−</button>
-
-    <button class="btn" onclick="num('4')">4</button>
-    <button class="btn" onclick="num('5')">5</button>
-    <button class="btn" onclick="num('6')">6</button>
-    <button class="btn btn-fn" onclick="fn('abs(')">|x|</button>
-    <button class="btn btn-op" onclick="op('+')">+</button>
-
-    <button class="btn" onclick="num('1')">1</button>
-    <button class="btn" onclick="num('2')">2</button>
-    <button class="btn" onclick="num('3')">3</button>
-    <button class="btn btn-fn" onclick="paren('(')">(</button>
-    <button class="btn btn-fn" onclick="paren(')')">)</button>
-
-    <button class="btn btn-wide" onclick="num('0')">0</button>
-    <button class="btn" onclick="dot()">.</button>
-    <button class="btn btn-eq" onclick="calculate()">=</button>
-  </div>
-  <div class="info">키보드 입력 지원, 괄호 자동 매칭, 계산 오류 개선</div>
-</div>
-<script>
-let expr = '';
-const exprEl = document.getElementById('expr');
-const resultEl = document.getElementById('result');
-const errorEl = document.getElementById('error');
-
-// 안전한 파서: 수학 함수만 지원하고, Function/ eval 미사용
-function safeEval(math) {
-    try {
-        // 함수 변환
-        let parsed = math
-          .replace(/(sin|cos|tan|log10|ln|sqrt|abs|pow)\(/g, 'Math.$1(')
-          .replace(/Math.ln/g, 'Math.log')
-          .replace(/(\d+)\^([\d()]+)/g, 'Math.pow($1,$2)')
-          .replace(/π/g, Math.PI.toString())
-          .replace(/e/g, Math.E.toString());
-        // 괄호/문자 유효성 검사
-        if (!/^[0-9\.\+\-\*\/\(\)Mathabsinrtcogelpawπe,]*$/.test(parsed)) throw "허용되지 않는 문자";
-        // 괄호 자동 닫기
-        let open = (parsed.match(/\(/g)||[]).length;
-        let close = (parsed.match(/\)/g)||[]).length;
-        parsed += ")".repeat(open-close > 0 ? open-close : 0);
-        // 주입 차단
-        return Function(`'use strict';return (${parsed})`)();
-    } catch {
-        throw "계산 오류";
-    }
-}
-function updateDisplay(){
-    exprEl.textContent = expr;
-    try {
-        errorEl.textContent = '';
-        let val = safeEval(expr);
-        if(val !== undefined && val !== null && isFinite(val))
-            resultEl.textContent = (''+val).length > 15 ? val.toExponential(8) : val;
-        else resultEl.textContent = '오류';
-    } catch(e){
-        resultEl.textContent = expr? '...' : '0';
-        errorEl.textContent = typeof e==='string'?e:'계산 오류';
-    }
-}
-function num(v){
-    if(expr.length<30) expr+=v; updateDisplay();
-}
-function op(o){
-    if(expr && !/[+\-\*\/\^]$/.test(expr)) {expr+=o;updateDisplay();}
-}
-function fn(f){
-    if(expr.length<28) {expr+=f;updateDisplay();}
-}
-function paren(p){ expr+=p; updateDisplay(); }
-function dot(){
-    if(!expr) expr+='0.';
-    else if(!/\.\d*$/.test(expr)) expr+='.';
-    updateDisplay();
-}
-function allClear(){expr=''; updateDisplay();}
-function backspace(){expr = expr.slice(0,-1); updateDisplay();}
-function calculate(){
-    try {
-        let val = safeEval(expr);
-        expr = ''+val;
-        updateDisplay();
-    } catch(e){
-        errorEl.textContent = typeof e==='string'?e:'계산 오류';
-    }
-}
-document.addEventListener('keydown',e=>{
-    if(/[0-9]/.test(e.key)) num(e.key);
-    else if(e.key=='.') dot();
-    else if(["/","*","-","+"].includes(e.key)) op(e.key);
-    else if(e.key=="Enter") calculate();
-    else if(e.key=="Backspace") backspace();
-    else if(e.key=="Escape") allClear();
-    else if(e.key=="(") paren("(");
-    else if(e.key==")") paren(")");
-});
-updateDisplay();
-</script>
-</body>
-</html>
+            min-height:54px;background:#161626;border-radius:8px;margin-bottom:6px;padd ...
